@@ -1,74 +1,32 @@
-function gradc()
+function gradc(N)
 
-    disp('Which error would you like to plot ?');
-    disp(' 1 : Solution of the elliptic equation (question 3)?');
-    disp(' 2 : Solution of the homogenized problem (question 4)?');
+    h = 1/N;
+
+    %% Solves both systems to find c1 and c2
     
-    choice = input('Make your choice:');
+    % Find components of c2
+    f = zeros((N-1)^2,1);
+    c2 = ellipticSolveur(N,f,true,2);
     
-    %%%%%%%%%%%%% Approximation error between Peps and peps %%%%%%%%%%%%%%%
-    epsilonTab = [1, 1/15, 1/45];
-    NTab = [10 30 50 70 90 110];
-    htab = [];
-    for i = 1:length(NTab)
-        htab = [htab 1/NTab(i)];
+    % Find components of c1
+    faux = zeros(N-1,1);
+    for i = 1:(N-1)
+        faux(i) = 4*pi*cos(2*pi*i*h);
     end
-    colors = ['r' 'b' 'm' 'c' 'k'];
-    
-    % Calculation of a peps reference solution 
-    Nref = 115;
-    href = 1/Nref;
-    figure()
-    for i = 1:length(epsilonTab)
-       epsilon = epsilonTab(i);
-       errorTab = [];
-       [Aref,pref] = buildStiffness1(epsilon,Nref);
-       
-       disp(" ");
-       disp("***************************************")
-       disp(['Epsilon = ' num2str(epsilon)]);
-       disp("***************************************")
-       
-       for j = 1:length(NTab)
-           N = NTab(j);
-           h = 1/N;
-           if (choice == 1)
-               [~,Pfd] = buildStiffness1(epsilon,N);
-           else 
-               [~,Pfd] = buildStiffnessEff(epsilon,N);
-           end
-           error = 0;
-           for l = 1:(N-1)
-               for k = 1:(N-1)
-                   error = error + (estimate(pref,l*h,k*h,href)-Pfd(k,l))^2;
-               end
-           end
-           error = sqrt(error);
-           errorTab = [errorTab error];
-       end
-       hold on 
-       semilogy(htab,errorTab, strcat('-*',colors(i)));
+    for j = 1:(N-1):(N-1)^2
+        f(j:j+N-2) = faux;        
     end
-    legend('1','1/15', '1/45');
-    xlabel('Discretization step h');
-    ylabel('Error between P^eps and p^eps');
+    c1 = ellipticSolveur(N,f,true,1);
+
+    
+    
+    
 end
    
 
-function value = estimate(p,x,y,h)
-    i = 1;
-    while (i*h < x)
-        i = i + 1;
-    end
-    j = 1;
-    while (j*h < y)
-        j = j + 1;
-    end
-    value = p(i,j);
-end
 
 
-function [A,p] = buildStiffness1(N)
+function p = ellipticSolveur(N,f,plot,component)
 
     % Definition of the step size 
     h = 1/N;
@@ -86,19 +44,17 @@ function [A,p] = buildStiffness1(N)
     
     A = (1/h^2) * A;
     
-    f = ones(n*n,1);
-    
     % Solve the problem 
     p = A\f;
     p = reshape(p,n,n);
     
     % Plot the solution 
-    plot = true;
     if (plot)
         points = h:h:1-h;
         [X,Y] = meshgrid(points,points);
         figure()
         surf(X,Y,p);
+        title(['Component c' num2str(component) ' of c'],'fontsize',22); 
     end
     
 end
@@ -159,4 +115,3 @@ function C = Cb(N)
     
     C = -diag(mdiag);
 end
-

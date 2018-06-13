@@ -1,10 +1,30 @@
 function homo()
 
-    disp('Which error would you like to plot ?');
+    disp('Which error would you like to compute ?');
     disp(' 1 : Solution of the elliptic equation (question 3)?');
-    disp(' 2 : Solution of the homogenized problem (question 4)?');
+    disp(' 0 : Solution of the homogenized problem (question 4)?');
     
-    choice = input('Make your choice:');
+    choice = input('Make your choice : ');
+    
+    disp('Would you like to plot the error between approximation and numerical solution ?');
+    disp(' 0 : No ');
+    disp(' 1 : Yes ');
+    
+    plotError = input('Make your choice : ');
+    
+    plotGraph = false;
+    
+    if (plotError)
+        disp("This choice diseable the possibility to plot the graph because of some troubles with ");
+        disp("MATLAB's figure");
+        disp("If you want to plot graphs, please choose to not plot error next time.")
+    else
+        disp('Would you like to plot the graphs ?');
+        disp(' 0 : No ');
+        disp(' 1 : Yes ');
+        plotGraph = input('Make your choice : ');
+    end
+
     
     %%%%%%%%%%%%% Approximation error between Peps and peps %%%%%%%%%%%%%%%
     epsilonTab = [1, 1/15, 1/45];
@@ -18,12 +38,15 @@ function homo()
     % Calculation of a peps reference solution 
     Nref = 115;
     href = 1/Nref;
-    figure()
+    
+    if (plotError)
+        figure()
+    end
+    
     for i = 1:length(epsilonTab)
        epsilon = epsilonTab(i);
+       pref = buildStiffness1(epsilon,Nref,plotGraph);
        errorTab = [];
-       [Aref,pref] = buildStiffness1(epsilon,Nref);
-       
        disp(" ");
        disp("***************************************")
        disp(['Epsilon = ' num2str(epsilon)]);
@@ -33,9 +56,9 @@ function homo()
            N = NTab(j);
            h = 1/N;
            if (choice == 1)
-               [~,Pfd] = buildStiffness1(epsilon,N);
+               Pfd = buildStiffness1(epsilon,N,plotGraph);
            else 
-               [~,Pfd] = buildStiffnessEff(epsilon,N);
+               Pfd = buildStiffnessEff(N,plotGraph);              
            end
            error = 0;
            for l = 1:(N-1)
@@ -46,12 +69,18 @@ function homo()
            error = sqrt(error);
            errorTab = [errorTab error];
        end
-       hold on 
-       semilogy(htab,errorTab, strcat('-*',colors(i)));
+       
+       if (plotError)
+           hold on 
+           semilogy(htab,errorTab, strcat('-*',colors(i)));
+       end
     end
-    legend('1','1/15', '1/45');
-    xlabel('Discretization step h');
-    ylabel('Error between P^eps and p^eps');
+    
+    if (plotError)
+        legend('1','1/15', '1/45');
+        xlabel('Discretization step h','fontsize',22);
+        ylabel('Error between P^{eps} and p^{eps}','fontsize',22);
+    end
 end
    
 
@@ -68,7 +97,7 @@ function value = estimate(p,x,y,h)
 end
 
 
-function [A,p] = buildStiffness1(epsilon,N)
+function p = buildStiffness1(epsilon,N,plot)
 
     % Definition of the step size 
     h = 1/N;
@@ -93,17 +122,18 @@ function [A,p] = buildStiffness1(epsilon,N)
     p = reshape(p,n,n);
     
     % Plot the solution 
-    plot = false;
     if (plot)
+        figure()
         points = h:h:1-h;
         [X,Y] = meshgrid(points,points);
         figure()
         surf(X,Y,p);
+        title(['Solution p for epsilon = ' num2str(epsilon) ' and h = ' num2str(h) ' (N= ' num2str(N) ')'],'fontsize',22);
     end
     
 end
 
-function [Aeff,peff] = buildStiffnessEff(epsilon,N)
+function [Aeff,peff] = buildStiffnessEff(N,plot)
     % Definition of the step size 
     h = 1/N;
     
@@ -126,12 +156,13 @@ function [Aeff,peff] = buildStiffnessEff(epsilon,N)
     peff = reshape(peff,n,n);
     
     % Plot the solution 
-    plot = false;
-    if (plot)
+    if ((plot))
+        figure()
         points = h:h:1-h;
         [X,Y] = meshgrid(points,points);
         figure()
         surf(X,Y,peff);
+        title(['Solution eff for h = ' num2str(h) ' (N= ' num2str(N) ')'],'fontsize',22);
     end
     
 
@@ -145,12 +176,6 @@ end
 function z = K(x,y,epsilon)
     k = (2*pi)/epsilon;
     z = 2 + sin(k*x)*sin(k*y);
-end
-
-% Function computing the 1-dimensional coefficient of diffusion 
-function z = K1d(x,epsilon)
-    k = 2*pi/epsilon;
-    z = 2 + sin(k*x);
 end
 
 
